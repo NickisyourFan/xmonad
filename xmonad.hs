@@ -15,6 +15,10 @@ import XMonad.Util.Run
 import XMonad.Hooks.ManageDocks
 import Graphics.X11.ExtraTypes.XF86
 
+import XMonad.Layout.NoBorders
+import XMonad.Layout.Spacing
+import XMonad.Hooks.DynamicLog
+
 import qualified XMonad.StackSet as W
 import qualified Data.Map        as M
 
@@ -168,7 +172,7 @@ myKeys conf@(XConfig {XMonad.modMask = modm}) = M.fromList $
 --
 myMouseBindings (XConfig {XMonad.modMask = modm}) = M.fromList $
 
-    -- mod-button1, Set the window to floating mode and move by dragging
+-- mod-button1, Set the window to floating mode and move by dragging
     [ ((modm, button1), (\w -> focus w >> mouseMoveWindow w
                                        >> windows W.shiftMaster))
 
@@ -193,7 +197,7 @@ myMouseBindings (XConfig {XMonad.modMask = modm}) = M.fromList $
 -- The available layouts.  Note that each layout is separated by |||,
 -- which denotes layout choice.
 --
-myLayout = avoidStruts (tiled ||| Mirror tiled ||| Full)
+myLayout = spacingWithEdge 20 $ noBorders( avoidStruts ( tiled ||| Mirror tiled ||| Full ))
   where
      -- default tiling algorithm partitions the screen into two panes
      tiled   = Tall nmaster delta ratio
@@ -202,7 +206,7 @@ myLayout = avoidStruts (tiled ||| Mirror tiled ||| Full)
      nmaster = 1
 
      -- Default proportion of screen occupied by master pane
-     ratio   = 1/2
+     ratio   = 3/5
 
      -- Percent of screen to increment by when resizing panes
      delta   = 3/100
@@ -245,7 +249,9 @@ myEventHook = mempty
 -- Perform an arbitrary action on each internal state change or X event.
 -- See the 'XMonad.Hooks.DynamicLog' extension for examples.
 --
-myLogHook = return ()
+myLogHook = dynamicLog
+
+--return ()
 
 
 ------------------------------------------------------------------------
