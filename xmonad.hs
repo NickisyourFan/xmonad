@@ -14,7 +14,10 @@ import XMonad.Util.SpawnOnce
 import XMonad.Util.Run
 import XMonad.Hooks.ManageDocks
 import Graphics.X11.ExtraTypes.XF86
+import XMonad.Layout.Fullscreen
+    ( fullscreenEventHook, fullscreenManageHook, fullscreenSupport, fullscreenFull )
 
+import System.IO
 import XMonad.Layout.NoBorders
 import XMonad.Layout.Spacing
 import XMonad.Hooks.DynamicLog
@@ -37,7 +40,7 @@ myClickJustFocuses = False
 
 -- Width of the window border in pixels.
 --
-myBorderWidth   = 1
+myBorderWidth   = 5
 
 -- modMask lets you specify which modkey you want to use. The default
 -- is mod1Mask ("left alt").  You may also consider using mod3Mask
@@ -55,7 +58,7 @@ myModMask       = mod4Mask
 --
 -- > workspaces = ["web", "irc", "code" ] ++ map show [4..9]
 --
-myWorkspaces    = ["1","2","3","4","5","6","7","8","9"]
+myWorkspaces    = ["Term","WWW","Code","Slack","5","6","7","8","Misc"]
 
 -- Border colors for unfocused and focused windows, respectively.
 --
@@ -197,7 +200,9 @@ myMouseBindings (XConfig {XMonad.modMask = modm}) = M.fromList $
 -- The available layouts.  Note that each layout is separated by |||,
 -- which denotes layout choice.
 --
-myLayout = spacingWithEdge 20 $ noBorders( avoidStruts ( tiled ||| Mirror tiled ||| Full ))
+--Add this before noBorder() to add a spacing between windows again.)
+----spacingWithEdge 20 $ -- Then Add noBorder() around the following myLayout
+myLayout = spacingWithEdge 10 $ avoidStruts ( tiled ||| Mirror tiled ||| Full )
   where
      -- default tiling algorithm partitions the screen into two panes
      tiled   = Tall nmaster delta ratio
@@ -248,10 +253,16 @@ myEventHook = mempty
 
 -- Perform an arbitrary action on each internal state change or X event.
 -- See the 'XMonad.Hooks.DynamicLog' extension for examples.
---
-myLogHook = dynamicLog
 
---return ()
+myLogHook :: Handle -> X ()
+myLogHook h = dynamicLogWithPP $ def { 
+                                     ppCurrent = xmobarColor "#79f785" "" . wrap "[" "]"
+                                     , ppLayout = const "" 
+                                     , ppSep = "|"
+                                     , ppTitle = const ""
+                                     , ppOutput = hPutStrLn h
+                                     }
+
 
 
 ------------------------------------------------------------------------
@@ -264,7 +275,11 @@ myLogHook = dynamicLog
 -- By default, do nothing.
 myStartupHook = do
     spawnOnce "nitrogen --restore $"
-    spawnOnce "compton &"
+    spawnOnce "picom --experimental-backend &"
+    spawnOnce "gnome-terminal"
+    spawnOnce "gnome-terminal -- ssh -L localhost:3000:localhost:3000 pi@192.168.1.83"
+    spawnOnce "gnome-terminal -- tty-clock -c"
+    spawnOnce "gnome-terminal -- colorscript -e 32"
 
 ------------------------------------------------------------------------
 -- Now run xmonad with all the defaults we set up.
@@ -272,8 +287,10 @@ myStartupHook = do
 -- Run xmonad with the settings you specify. No need to modify this.
 --
 main = do 
-   xmproc <- spawnPipe "xmobar -x 0 ~/.xmobar/.xmobarrc"
-   xmonad $ docks defaults
+   h <- spawnPipe "xmobar ~/.xmobar/.xmobarrc"
+   xmonad $ fullscreenSupport $ docks defaults {
+       logHook = myLogHook h
+   }
 
 -- A structure containing your configuration settings, overriding
 -- fields in the default config. Any you don't override, will
@@ -300,7 +317,7 @@ defaults = def {
         layoutHook         = myLayout,
         manageHook         = myManageHook,
         handleEventHook    = myEventHook,
-        logHook            = myLogHook,
+        logHook            = return (),
         startupHook        = myStartupHook
     }
 
